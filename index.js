@@ -20,22 +20,41 @@ connectDb(
 app.post("/user", async (req, res) => {
   try {
     const { email, password } = req.body;
+    const existingUser = await userModel.findOne({ email: email });
+    if (existingUser) {
+      existingUser.password = password;
+      const updatedUser = await existingUser.save();
+      return res.status(200).json({
+        success: true,
+        response: "User updated successfully",
+        user: updatedUser,
+      });
+    }
+
     const docs = new userModel({
       email: email,
       password: password,
     });
+
     const result = await docs.save();
     console.log(result);
     res.status(201).json({
       success: true,
-      response: "User Register Successfully",
+      response: "User Registered Successfully",
     });
   } catch (error) {
     console.log(error);
-    res.status(400).json({
-      success: false,
-      response: "Email shoud be Unique",
-    });
+    if (error.code === 11000) {
+      res.status(400).json({
+        success: false,
+        response: "Email should be Unique",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        response: "An error occurred",
+      });
+    }
   }
 });
 
